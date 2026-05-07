@@ -1,4 +1,4 @@
-import { useDataStore } from '@/store'
+import { useUsers, useUpdateUser } from '@/hooks/useUsers'
 import { cn } from '@/lib/utils'
 import type { User } from '@/types'
 
@@ -7,8 +7,8 @@ const roleLabel: Record<string, string> = {
 }
 
 export default function OnlineAgentsPage() {
-  const users = useDataStore((s) => s.users)
-  const updateUser = useDataStore((s) => s.updateUser)
+  const { data: users = [] } = useUsers()
+  const updateUserMutation   = useUpdateUser()
 
   const agents = users.filter((u) => u.role === 'agent' || u.role === 'admin')
   const onlineCount = agents.filter((u) => u.online && u.enabled).length
@@ -41,7 +41,7 @@ export default function OnlineAgentsPage() {
           <AgentRow
             key={user.id}
             user={user}
-            onToggle={() => updateUser(user.id, { online: !user.online })}
+            onToggle={() => updateUserMutation.mutate({ id: user.id, patch: { online: !user.online } })}
           />
         ))}
       </div>

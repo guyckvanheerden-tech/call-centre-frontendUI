@@ -1,15 +1,22 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDataStore } from '@/store'
+import { useTicket } from '@/hooks/useTickets'
 import TicketDetail from '@/components/tickets/TicketDetail'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 
 export default function TicketDetailPage() {
-  const { id } = useParams<{ id: string }>()
-  const tickets = useDataStore((s) => s.tickets)
+  const { id = '' } = useParams<{ id: string }>()
+  const { data: ticket, isLoading, isError } = useTicket(id)
   const navigate = useNavigate()
-  const ticket = tickets.find((t) => t.id === id)
 
-  if (!ticket) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        <Loader2 size={20} className="animate-spin" />
+      </div>
+    )
+  }
+
+  if (isError || !ticket) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
         <p className="text-sm">Ticket <span className="font-mono font-semibold">{id}</span> not found.</p>

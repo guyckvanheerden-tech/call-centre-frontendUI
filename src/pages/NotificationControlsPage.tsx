@@ -1,18 +1,29 @@
-import { useState } from 'react'
-import { useDataStore } from '@/store'
+import { useState, useEffect } from 'react'
+import { useSLAPolicies } from '@/hooks/useSLAPolicies'
+import { useNotifications, useUpdateNotification } from '@/hooks/useNotifications'
 import NotificationPanel from '@/components/notifications/NotificationPanel'
 import type { NotificationSettings } from '@/types'
 
 export default function NotificationControlsPage() {
-  const { policies, notifications, updateNotification } = useDataStore()
-  const [selected, setSelected] = useState(policies[0]?.id ?? '')
+  const { data: policies = [] } = useSLAPolicies()
+  const { data: notifications = [] } = useNotifications()
+  const updateNotification = useUpdateNotification()
+
+  const [selected, setSelected] = useState<string>('')
+
+  // Auto-select first policy once loaded
+  useEffect(() => {
+    if (!selected && policies.length > 0) {
+      setSelected(policies[0].id)
+    }
+  }, [policies, selected])
 
   const settings = notifications.find((n) => n.policyId === selected)
   const policy = policies.find((p) => p.id === selected)
 
   const handleChange = (patch: Partial<NotificationSettings>) => {
     if (!selected) return
-    updateNotification(selected, patch)
+    updateNotification.mutate({ policyId: selected, patch })
   }
 
   return (
@@ -39,6 +50,9 @@ export default function NotificationControlsPage() {
               {p.name}
             </button>
           ))}
+          {policies.length === 0 && (
+            <p className="text-xs text-gray-400">No SLA policies found. Create one in SLA Policies first.</p>
+          )}
         </div>
       </div>
 
@@ -52,7 +66,9 @@ export default function NotificationControlsPage() {
           <NotificationPanel settings={settings} onChange={handleChange} />
         </>
       ) : (
-        <div className="text-sm text-gray-400 py-12 text-center">Select a policy to configure notifications.</div>
+        <div className="text-sm text-gray-400 py-12 text-center">
+          {policies.length > 0 ? 'Select a policy to configure notifications.' : 'No policies available.'}
+        </div>
       )}
     </div>
   )

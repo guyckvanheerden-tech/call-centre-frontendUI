@@ -1,23 +1,41 @@
 import { useNavigate } from 'react-router-dom'
 import { Users, ChevronRight, CheckCircle2 } from 'lucide-react'
-import { useDataStore } from '@/store'
-import { mockKPI, mockDailyData } from '@/data/mock'
+import { useTickets } from '@/hooks/useTickets'
+import { useUsers } from '@/hooks/useUsers'
+import { useReportKPI, useReportDaily } from '@/hooks/useReports'
 import KPICards from '@/components/dashboard/KPICards'
-import { BreachTrendChart, ResponseTrendChart, DomainVolumeChart } from '@/components/dashboard/Charts'
+import { BreachTrendChart, ResponseTrendChart, DomainVolumeChart, type DomainVolumeRow } from '@/components/dashboard/Charts'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import { cn, formatRelative } from '@/lib/utils'
-
-const last7 = mockDailyData.slice(-7)
+import { format, subDays } from 'date-fns'
 
 export default function DashboardPage() {
-  const tickets = useDataStore((s) => s.tickets)
-  const users   = useDataStore((s) => s.users)
+  const { data: tickets = [] } = useTickets()
+  const { data: users   = [] } = useUsers()
   const navigate = useNavigate()
+
+  const today   = new Date()
+  const start7  = format(subDays(today, 6), 'yyyy-MM-dd')
+  const end7    = format(today, 'yyyy-MM-dd')
+  const { data: kpi }    = useReportKPI()
+  const { data: last7 = [] } = useReportDaily(start7, end7)
 
   const breached = tickets.filter((t) => t.slaStatus === 'breached')
   const atRisk   = tickets.filter((t) => t.slaStatus === 'at_risk')
 
-  const agentPool = users.filter((u) => (u.role === 'agent' || u.role === 'admin') && u.enabled)
+  // Domain volume: count tickets by the domain part of customerEmail
+  const domainVolume: DomainVolumeRow[] = Object.entries(
+    tickets.reduce<Record<string, number>>((acc, t) => {
+      const domain = t.customerEmail?.split('@')[1] ?? 'unknown'
+      acc[domain] = (acc[domain] ?? 0) + 1
+      return acc
+    }, {})
+  )
+    .map(([domain, count]) => ({ domain, tickets: count }))
+    .sort((a, b) => b.tickets - a.tickets)
+    .slice(0, 6)
+
+  const agentPool    = users.filter((u) => (u.role === 'agent' || u.role === 'admin') && u.enabled)
   const onlineAgents = agentPool.filter((u) => u.online)
 
   return (
@@ -27,7 +45,7 @@ export default function DashboardPage() {
         <p className="text-sm text-gray-500 mt-0.5">Live SLA overview — today</p>
       </div>
 
-      <KPICards kpi={mockKPI} />
+      {kpi && <KPICards kpi={kpi} />}
 
       {/* Resolved Tickets + Online Agents — 2-column live metrics row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -79,7 +97,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <BreachTrendChart data={last7} />
         <ResponseTrendChart data={last7} />
-        <DomainVolumeChart />
+        <DomainVolumeChart data={domainVolume} />
       </div>
 
       {/* Urgent tickets table */}

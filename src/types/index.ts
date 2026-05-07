@@ -92,3 +92,13 @@ export interface KPIData {
   breached: number
   avgResponseMinutes: number
 }
+
+export interface DailyRow {
+  isoDate: string
+  label: string
+  breaches: number
+  atRisk: number
+  avgMins: number
+  resolved: number
+  total: number
+}

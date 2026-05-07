@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { UserCheck, UserX, PenLine, Check, X, ImagePlus, Trash2, UserPlus } from 'lucide-react'
-import { useDataStore } from '@/store'
+import { useUsers, useUpdateUser, useCreateUser } from '@/hooks/useUsers'
 import type { User, UserRole } from '@/types'
 import { cn, formatRelative } from '@/lib/utils'
 
@@ -12,7 +12,10 @@ const roleConfig: Record<UserRole, { label: string; color: string; bg: string }>
 const ACCEPTED = 'image/png,image/jpeg'
 
 export default function UserManagementPage() {
-  const { users, updateUser, addUser } = useDataStore()
+  const { data: users = [] } = useUsers()
+  const updateUserMutation   = useUpdateUser()
+  const addUserMutation      = useCreateUser()
+  const updateUser = (id: string, patch: Partial<User>) => updateUserMutation.mutate({ id, patch })
   const [filter,       setFilter]       = useState<UserRole | 'all'>('all')
   const [sigEditId,    setSigEditId]    = useState<string | null>(null)
   const [sigDraft,     setSigDraft]     = useState('')
@@ -79,7 +82,9 @@ export default function UserManagementPage() {
       {showAddUser && (
         <AddUserModal
           onClose={() => setShowAddUser(false)}
-          onAdd={(user) => { addUser(user); setShowAddUser(false) }}
+          onAdd={(input) => {
+            addUserMutation.mutate(input, { onSuccess: () => setShowAddUser(false) })
+          }}
           existingEmails={users.map((u) => u.email.toLowerCase())}
         />
       )}
@@ -378,13 +383,16 @@ function SignatureEditor({ user, sigDraft, imgDraft, onSigChange, onImgChange, o
 
 // ─── Add User Modal ────────────────────────────────────────────────────────────
 
+interface AddUserInput { name: string; email: string; role: UserRole; password: string }
+
 function AddUserModal({ onClose, onAdd, existingEmails }: {
   onClose: () => void
-  onAdd: (user: User) => void
+  onAdd: (input: AddUserInput) => void
   existingEmails: string[]
 }) {
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
   const [role,     setRole]     = useState<UserRole>('agent')
   const [emailErr, setEmailErr] = useState('')
   const nameRef = useRef<HTMLInputElement>(null)
@@ -407,17 +415,8 @@ function AddUserModal({ onClose, onAdd, existingEmails }: {
     e.preventDefault()
     const err = validateEmail(email.trim())
     if (err) { setEmailErr(err); return }
-    if (!name.trim()) return
-    const newUser: User = {
-      id:        `u${Date.now()}`,
-      name:      name.trim(),
-      email:     email.trim().toLowerCase(),
-      role,
-      enabled:   true,
-      online:    false,
-      createdAt: new Date().toISOString(),
-    }
-    onAdd(newUser)
+    if (!name.trim() || !password.trim()) return
+    onAdd({ name: name.trim(), email: email.trim().toLowerCase(), role, password })
   }
 
   return (
@@ -472,6 +471,21 @@ function AddUserModal({ onClose, onAdd, existingEmails }: {
           </div>
 
           <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1.5">
+              Password <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min. 8 characters"
+              minLength={8}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 text-gray-800 placeholder-gray-300"
+              required
+            />
+          </div>
+
+          <div>
             <label className="text-xs font-medium text-gray-600 block mb-1.5">Role</label>
             <div className="grid grid-cols-2 gap-2">
               {(Object.entries(roleConfig) as [UserRole, typeof roleConfig[UserRole]][]).map(([r, cfg]) => (
@@ -503,7 +517,7 @@ function AddUserModal({ onClose, onAdd, existingEmails }: {
           <div className="flex items-center gap-2 pt-1">
             <button
               type="submit"
-              disabled={!name.trim() || !email.trim() || !!emailErr}
+              disabled={!name.trim() || !email.trim() || !password || !!emailErr}
               className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors"
             >
               Create User

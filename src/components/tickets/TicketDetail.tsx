@@ -5,7 +5,9 @@ import {
   Send, ChevronDown, Paperclip, Bold, Italic, Link2,
   CornerUpLeft, TicketIcon,
 } from 'lucide-react'
-import { useDataStore } from '@/store'
+import { useUpdateTicket, useAddMessage } from '@/hooks/useTickets'
+import { useUsers } from '@/hooks/useUsers'
+import { useAuth } from '@/lib/auth'
 import type { Ticket, TicketMessage, TicketStatus } from '@/types'
 
 const TICKET_TYPES = [
@@ -24,8 +26,6 @@ import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import SLACountdown from '@/components/sla/SLACountdown'
 import { cn, formatDateTime, formatRelative, ticketStatusConfig } from '@/lib/utils'
 
-const LOGGED_IN_USER_ID = 'u1'
-
 const cannedResponses = [
   { id: 'c1', label: 'Initial Acknowledgement',
     body: 'Thank you for contacting us. I have received your request and will investigate this as a priority. I will update you within the next hour with a resolution or progress update.' },
@@ -39,10 +39,12 @@ const cannedResponses = [
 
 export default function TicketDetail({ ticket }: { ticket: Ticket }) {
   const navigate = useNavigate()
-  const updateTicket = useDataStore((s) => s.updateTicket)
-  const users = useDataStore((s) => s.users)
+  const { mutate: updateTicketMutate } = useUpdateTicket()
+  const addMessage = useAddMessage()
+  const { data: users = [] } = useUsers()
+  const { profile: currentUser } = useAuth()
 
-  const currentUser = users.find((u) => u.id === LOGGED_IN_USER_ID)
+  const updateTicket = (id: string, patch: Partial<Ticket>) => updateTicketMutate({ id, patch })
   const agents = users.filter((u) => u.role === 'agent')
 
   // All messages collapsed except the last one
@@ -72,25 +74,14 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
   const handleSend = () => {
     const body = replyBody.trim()
     if (!body || !ticket.ticketType) return
-    const fullBody = currentUser?.signature
-      ? `${body}\n\n-- \n${currentUser.signature}`
-      : body
-    const newMsg: TicketMessage = {
-      id: `m${Date.now()}`,
-      ticketId: ticket.id,
-      direction: 'outbound',
-      from: currentUser?.name ?? 'Agent',
-      body: fullBody,
-      createdAt: new Date().toISOString(),
-    }
-    updateTicket(ticket.id, {
-      messages: [...ticket.messages, newMsg],
-      status: 'pending',
-      updatedAt: new Date().toISOString(),
-    })
-    setReplyBody('')
-    // Expand the new message
-    setExpandedIds(new Set([newMsg.id]))
+    addMessage.mutate(
+      { ticketId: ticket.id, body, direction: 'outbound' },
+      {
+        onSuccess: () => {
+          setReplyBody('')
+        },
+      }
+    )
   }
 
   const statusCfg = ticketStatusConfig[ticket.status]

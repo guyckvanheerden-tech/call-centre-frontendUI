@@ -1,27 +1,41 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Check, X, Clock } from 'lucide-react'
-import { useDataStore } from '@/store'
+import { useSLAPolicies, useCreateSLAPolicy, useUpdateSLAPolicy, useDeleteSLAPolicy } from '@/hooks/useSLAPolicies'
 import type { SLAPolicy } from '@/types'
 import { minutesToHuman } from '@/lib/utils'
 
-const emptyPolicy = (): SLAPolicy => ({
-  id: `p${Date.now()}`, name: '', firstResponseMinutes: 240, resolutionMinutes: 1440, businessHoursOnly: true,
+const emptyPolicy = (): Omit<SLAPolicy, 'id'> => ({
+  name: '', firstResponseMinutes: 240, resolutionMinutes: 1440, businessHoursOnly: true,
 })
 
+type DraftPolicy = Partial<SLAPolicy> & { name: string; firstResponseMinutes: number; resolutionMinutes: number; businessHoursOnly: boolean }
+
 export default function SLAPoliciesPage() {
-  const { policies, addPolicy, updatePolicy, deletePolicy } = useDataStore()
+  const { data: policies = [] } = useSLAPolicies()
+  const createPolicy = useCreateSLAPolicy()
+  const updatePolicy = useUpdateSLAPolicy()
+  const deletePolicy = useDeleteSLAPolicy()
+
   const [editing, setEditing] = useState<string | null>(null)
-  const [draft, setDraft] = useState<SLAPolicy | null>(null)
+  const [draft, setDraft] = useState<DraftPolicy | null>(null)
 
   const startEdit = (policy: SLAPolicy) => { setEditing(policy.id); setDraft({ ...policy }) }
-  const startNew = () => { const p = emptyPolicy(); setDraft(p); setEditing('__new__') }
+  const startNew = () => { setDraft({ ...emptyPolicy() }); setEditing('__new__') }
   const cancel = () => { setEditing(null); setDraft(null) }
 
   const save = () => {
     if (!draft) return
-    if (editing === '__new__') addPolicy(draft)
-    else updatePolicy(draft.id, draft)
-    cancel()
+    if (editing === '__new__') {
+      createPolicy.mutate(
+        { name: draft.name, firstResponseMinutes: draft.firstResponseMinutes, resolutionMinutes: draft.resolutionMinutes, businessHoursOnly: draft.businessHoursOnly },
+        { onSuccess: cancel }
+      )
+    } else if (draft.id) {
+      updatePolicy.mutate(
+        { id: draft.id, patch: { name: draft.name, firstResponseMinutes: draft.firstResponseMinutes, resolutionMinutes: draft.resolutionMinutes, businessHoursOnly: draft.businessHoursOnly } },
+        { onSuccess: cancel }
+      )
+    }
   }
 
   return (
@@ -85,13 +99,24 @@ export default function SLAPoliciesPage() {
                       <button onClick={() => startEdit(policy)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700">
                         <Pencil size={13} />
                       </button>
-                      <button onClick={() => deletePolicy(policy.id)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600">
+                      <button
+                        onClick={() => deletePolicy.mutate(policy.id)}
+                        className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </td>
                 </tr>
               )
+            )}
+
+            {policies.length === 0 && editing !== '__new__' && (
+              <tr>
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-gray-400">
+                  No SLA policies yet. Click "New Policy" to create one.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -103,8 +128,8 @@ export default function SLAPoliciesPage() {
 function PolicyEditRow({
   draft, onChange, onSave, onCancel,
 }: {
-  draft: SLAPolicy
-  onChange: (p: SLAPolicy) => void
+  draft: DraftPolicy
+  onChange: (p: DraftPolicy) => void
   onSave: () => void
   onCancel: () => void
 }) {

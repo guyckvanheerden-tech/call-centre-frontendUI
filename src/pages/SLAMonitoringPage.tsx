@@ -1,23 +1,28 @@
 import { useNavigate } from 'react-router-dom'
-import { useDataStore } from '@/store'
-import { mockKPI, mockDailyData } from '@/data/mock'
+import { useTickets } from '@/hooks/useTickets'
+import { useReportKPI, useReportDaily } from '@/hooks/useReports'
 import KPICards from '@/components/dashboard/KPICards'
 import { BreachTrendChart, ResponseTrendChart } from '@/components/dashboard/Charts'
-
-const last7 = mockDailyData.slice(-7)
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import SLACountdown from '@/components/sla/SLACountdown'
 import { formatRelative, ticketStatusConfig, cn } from '@/lib/utils'
+import { format, subDays } from 'date-fns'
 
 export default function SLAMonitoringPage() {
-  const tickets = useDataStore((s) => s.tickets)
+  const { data: tickets = [] } = useTickets()
+  const { data: kpi } = useReportKPI()
   const navigate = useNavigate()
+
+  const today  = new Date()
+  const start7 = format(subDays(today, 6), 'yyyy-MM-dd')
+  const end7   = format(today, 'yyyy-MM-dd')
+  const { data: last7 = [] } = useReportDaily(start7, end7)
 
   const active = tickets
     .filter((t) => t.status !== 'resolved')
     .sort((a, b) => {
-      const order = { breached: 0, at_risk: 1, on_track: 2 }
-      return order[a.slaStatus] - order[b.slaStatus]
+      const order: Record<string, number> = { breached: 0, at_risk: 1, on_track: 2 }
+      return (order[a.slaStatus] ?? 3) - (order[b.slaStatus] ?? 3)
     })
 
   return (
@@ -27,7 +32,7 @@ export default function SLAMonitoringPage() {
         <p className="text-sm text-gray-500 mt-0.5">Real-time status of all active tickets</p>
       </div>
 
-      <KPICards kpi={mockKPI} />
+      {kpi && <KPICards kpi={kpi} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <BreachTrendChart data={last7} />
@@ -84,6 +89,13 @@ export default function SLAMonitoringPage() {
                   </tr>
                 )
               })}
+              {active.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-gray-400">
+                    No active tickets — all clear!
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

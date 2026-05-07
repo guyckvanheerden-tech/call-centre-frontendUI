@@ -1,26 +1,42 @@
 import { useState } from 'react'
 import { Plus, Pencil, Trash2, Check, X, Globe } from 'lucide-react'
-import { useDataStore } from '@/store'
+import { useDomains, useCreateDomain, useUpdateDomain, useDeleteDomain } from '@/hooks/useDomains'
+import { useSLAPolicies } from '@/hooks/useSLAPolicies'
 import type { Domain } from '@/types'
 
-const emptyDomain = (): Domain => ({
-  id: `d${Date.now()}`, name: '', slaPolicyId: '', priority: 99,
+const emptyDomain = (): Omit<Domain, 'id'> => ({
+  name: '', slaPolicyId: '', priority: 99,
 })
 
+type DraftDomain = Partial<Domain> & { name: string; slaPolicyId: string; priority: number }
+
 export default function DomainRoutingPage() {
-  const { domains, policies, addDomain, updateDomain, deleteDomain } = useDataStore()
+  const { data: domains = [] } = useDomains()
+  const { data: policies = [] } = useSLAPolicies()
+  const createDomain = useCreateDomain()
+  const updateDomain = useUpdateDomain()
+  const deleteDomain = useDeleteDomain()
+
   const [editing, setEditing] = useState<string | null>(null)
-  const [draft, setDraft] = useState<Domain | null>(null)
+  const [draft, setDraft] = useState<DraftDomain | null>(null)
 
   const startEdit = (d: Domain) => { setEditing(d.id); setDraft({ ...d }) }
-  const startNew = () => { const d = emptyDomain(); setDraft(d); setEditing('__new__') }
+  const startNew = () => { setDraft({ ...emptyDomain() }); setEditing('__new__') }
   const cancel = () => { setEditing(null); setDraft(null) }
 
   const save = () => {
     if (!draft) return
-    if (editing === '__new__') addDomain(draft)
-    else updateDomain(draft.id, draft)
-    cancel()
+    if (editing === '__new__') {
+      createDomain.mutate(
+        { name: draft.name, slaPolicyId: draft.slaPolicyId, priority: draft.priority },
+        { onSuccess: cancel }
+      )
+    } else if (draft.id) {
+      updateDomain.mutate(
+        { id: draft.id, patch: { name: draft.name, slaPolicyId: draft.slaPolicyId, priority: draft.priority } },
+        { onSuccess: cancel }
+      )
+    }
   }
 
   const sorted = [...domains].sort((a, b) => a.priority - b.priority)
@@ -79,13 +95,23 @@ export default function DomainRoutingPage() {
                       <button onClick={() => startEdit(domain)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700">
                         <Pencil size={13} />
                       </button>
-                      <button onClick={() => deleteDomain(domain.id)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600">
+                      <button
+                        onClick={() => deleteDomain.mutate(domain.id)}
+                        className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
+                      >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </td>
                 </tr>
               )
+            )}
+            {sorted.length === 0 && editing !== '__new__' && (
+              <tr>
+                <td colSpan={4} className="px-5 py-10 text-center text-sm text-gray-400">
+                  No domains configured. Click "Add Domain" to get started.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -101,8 +127,8 @@ export default function DomainRoutingPage() {
 function DomainEditRow({
   draft, onChange, onSave, onCancel, policies,
 }: {
-  draft: Domain
-  onChange: (d: Domain) => void
+  draft: DraftDomain
+  onChange: (d: DraftDomain) => void
   onSave: () => void
   onCancel: () => void
   policies: { id: string; name: string }[]

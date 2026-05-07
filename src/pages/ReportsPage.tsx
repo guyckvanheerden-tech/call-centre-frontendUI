@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'react'
-import {
-  subDays, parseISO, isWithinInterval, startOfDay, endOfDay,
-  format, differenceInMinutes, eachDayOfInterval,
-} from 'date-fns'
+import { subDays, format } from 'date-fns'
 import { Download, TrendingDown, TrendingUp, Calendar, User } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { mockDailyData, mockDomainVolumeData } from '@/data/mock'
-import { useDataStore } from '@/store'
+import { useReportDaily } from '@/hooks/useReports'
+import { useUsers } from '@/hooks/useUsers'
+import { useAuth } from '@/lib/auth'
 import { BreachTrendChart, ResponseTrendChart, DomainVolumeChart } from '@/components/dashboard/Charts'
 import { cn } from '@/lib/utils'
-import type { DailyRow } from '@/data/mock'
 
 type Preset = '7d' | '14d' | '30d' | 'custom'
 
@@ -24,102 +21,41 @@ function toInputDate(d: Date) {
   return format(d, 'yyyy-MM-dd')
 }
 
-const LOGGED_IN_USER_ID = 'u1'
-
 export default function ReportsPage() {
-  const tickets = useDataStore((s) => s.tickets)
-  const users   = useDataStore((s) => s.users)
+  const { profile }        = useAuth()
+  const { data: users = [] } = useUsers()
+  const isAgent = profile?.role === 'agent'
 
-  const today = useMemo(() => new Date('2026-05-07'), [])
-
-  const currentUser = users.find((u) => u.id === LOGGED_IN_USER_ID)
-  const isAgent = currentUser?.role === 'agent'
+  const today = useMemo(() => new Date(), [])
 
   const [preset,      setPreset]      = useState<Preset>('7d')
   const [customStart, setCustomStart] = useState(toInputDate(subDays(today, 6)))
   const [customEnd,   setCustomEnd]   = useState(toInputDate(today))
   // Agents always see their own data; admins can freely filter
-  const [agentFilter, setAgentFilter] = useState(isAgent ? LOGGED_IN_USER_ID : 'all')
-
-  // Only non-agent users can change the filter — enforce agent lock
-  const effectiveAgentFilter = isAgent ? LOGGED_IN_USER_ID : agentFilter
+  const [agentFilter, setAgentFilter] = useState('all')
+  const effectiveAgentFilter = isAgent ? (profile?.id ?? 'all') : agentFilter
 
   const agentOptions = useMemo(
     () => users.filter((u) => u.role === 'agent'),
     [users]
   )
 
-  // Resolve effective date range
-  const { rangeStart, rangeEnd } = useMemo(() => {
-    if (preset === 'custom') {
-      return {
-        rangeStart: startOfDay(parseISO(customStart)),
-        rangeEnd:   endOfDay(parseISO(customEnd)),
-      }
-    }
+  // Resolve the active date range strings for the API
+  const { rangeStartStr, rangeEndStr } = useMemo(() => {
+    if (preset === 'custom') return { rangeStartStr: customStart, rangeEndStr: customEnd }
     const days = preset === '7d' ? 6 : preset === '14d' ? 13 : 29
     return {
-      rangeStart: startOfDay(subDays(today, days)),
-      rangeEnd:   endOfDay(today),
+      rangeStartStr: toInputDate(subDays(today, days)),
+      rangeEndStr:   toInputDate(today),
     }
   }, [preset, customStart, customEnd, today])
 
-  // Date-filtered aggregate data (used when agentFilter === 'all')
-  const filteredData = useMemo(
-    () => mockDailyData.filter((row) =>
-      isWithinInterval(parseISO(row.isoDate), { start: rangeStart, end: rangeEnd })
-    ),
-    [rangeStart, rangeEnd]
-  )
+  const agentIdParam = effectiveAgentFilter === 'all' ? undefined : effectiveAgentFilter
+  const { data: reportData = [], isFetching } = useReportDaily(rangeStartStr, rangeEndStr, agentIdParam)
 
-  // Per-agent daily data computed from real tickets
-  const agentDailyData = useMemo((): DailyRow[] => {
-    const agentTickets = tickets.filter((t) =>
-      t.assignedAgentId === effectiveAgentFilter &&
-      isWithinInterval(parseISO(t.createdAt), { start: rangeStart, end: rangeEnd })
-    )
-
-    const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd })
-
-    return days
-      .map((day) => {
-        const ds = startOfDay(day)
-        const de = endOfDay(day)
-        const dayTickets = agentTickets.filter((t) =>
-          isWithinInterval(parseISO(t.createdAt), { start: ds, end: de })
-        )
-
-        const responseTimes = dayTickets
-          .map((t) => {
-            const firstIn  = t.messages.find((m) => m.direction === 'inbound')
-            const firstOut = t.messages.find((m) => m.direction === 'outbound')
-            if (firstIn && firstOut) {
-              const mins = differenceInMinutes(parseISO(firstOut.createdAt), parseISO(firstIn.createdAt))
-              return mins >= 0 ? mins : null
-            }
-            return null
-          })
-          .filter((v): v is number => v !== null)
-
-        const avgMins = responseTimes.length
-          ? Math.round(responseTimes.reduce((s, v) => s + v, 0) / responseTimes.length)
-          : 0
-
-        return {
-          isoDate:  format(day, 'yyyy-MM-dd'),
-          label:    format(day, 'd MMM'),
-          breaches: dayTickets.filter((t) => t.slaStatus === 'breached').length,
-          atRisk:   dayTickets.filter((t) => t.slaStatus === 'at_risk').length,
-          avgMins,
-          resolved: dayTickets.filter((t) => t.status === 'resolved').length,
-          total:    dayTickets.length,
-        }
-      })
-      .filter((row) => row.total > 0)
-  }, [effectiveAgentFilter, tickets, rangeStart, rangeEnd])
-
-  // Active report dataset — aggregate mock data for "all", computed per-agent otherwise
-  const reportData = effectiveAgentFilter === 'all' ? filteredData : agentDailyData
+  // Re-derive Date objects for display labels
+  const rangeStart = new Date(`${rangeStartStr}T12:00:00Z`)
+  const rangeEnd   = new Date(`${rangeEndStr}T12:00:00Z`)
 
   // KPIs derived from active dataset
   const kpis = useMemo(() => {
@@ -164,31 +100,18 @@ export default function ReportsPage() {
       }))
     ), 'Daily Summary')
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      mockDomainVolumeData.map((d) => ({ Domain: d.domain, Tickets: d.tickets }))
-    ), 'Domain Volume')
+    // Domain volume is a static reference chart — omit from export or add separately
 
-    const exportTickets = effectiveAgentFilter === 'all'
-      ? tickets
-      : tickets.filter((t) =>
-          t.assignedAgentId === effectiveAgentFilter &&
-          isWithinInterval(parseISO(t.createdAt), { start: rangeStart, end: rangeEnd })
-        )
+    // For the tickets sheet we use the daily summary rows (no full ticket list available here)
+    const exportTickets = reportData.map((r) => ({
+      Date:       r.label,
+      'Breaches': r.breaches,
+      'At Risk':  r.atRisk,
+      'Resolved': r.resolved,
+      'Total':    r.total,
+    }))
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      exportTickets.map((t) => ({
-        'Ticket ID':      t.id,
-        Subject:          t.subject,
-        Customer:         t.customerEmail,
-        Domain:           t.domain,
-        Status:           t.status,
-        'SLA Status':     t.slaStatus,
-        'SLA Policy':     t.slaPolicy,
-        'Assigned Agent': t.assignedAgent ?? 'Unassigned',
-        Created:          format(parseISO(t.createdAt), 'dd/MM/yyyy HH:mm'),
-        'Last Updated':   format(parseISO(t.updatedAt), 'dd/MM/yyyy HH:mm'),
-      }))
-    ), 'Tickets')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportTickets), 'Tickets')
 
     const agentSuffix = selectedAgent ? `_${selectedAgent.name.replace(/\s+/g, '')}` : ''
     XLSX.writeFile(
@@ -365,9 +288,11 @@ export default function ReportsPage() {
         </div>
         {reportData.length === 0 ? (
           <div className="py-12 text-center text-sm text-gray-400">
-            {effectiveAgentFilter !== 'all' && tickets.filter((t) => t.assignedAgentId === effectiveAgentFilter).length === 0
-              ? `No tickets assigned to ${selectedAgent?.name ?? 'this agent'} in the selected period.`
-              : 'No data for selected range.'
+            {isFetching
+              ? 'Loading…'
+              : effectiveAgentFilter !== 'all'
+                ? `No tickets assigned to ${selectedAgent?.name ?? 'this agent'} in the selected period.`
+                : 'No data for selected range.'
             }
           </div>
         ) : (

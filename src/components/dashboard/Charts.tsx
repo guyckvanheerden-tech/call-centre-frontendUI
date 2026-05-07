@@ -2,7 +2,9 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { mockDomainVolumeData, type DailyRow } from '@/data/mock'
+import type { DailyRow } from '@/types'
+
+export interface DomainVolumeRow { domain: string; tickets: number }
 
 const tooltipStyle = { fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / .07)' }
 
@@ -57,12 +59,12 @@ export function ResponseTrendChart({ data }: { data: DailyRow[] }) {
   )
 }
 
-export function DomainVolumeChart() {
+export function DomainVolumeChart({ data }: { data: DomainVolumeRow[] }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4">Tickets by Domain</h3>
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={mockDomainVolumeData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
           <XAxis dataKey="domain" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
