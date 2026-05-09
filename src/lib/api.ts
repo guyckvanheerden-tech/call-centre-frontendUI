@@ -78,6 +78,12 @@ export const notificationsApi = {
     patch<{ ok: boolean }>(`/notifications/${policyId}`, body),
 }
 
+// ── AI ────────────────────────────────────────────────────────
+export const aiApi = {
+  grammarCheck: (text: string) =>
+    post<{ corrected: string }>('/ai/grammar-check', { text }),
+}
+
 // ── Reports ───────────────────────────────────────────────────
 export const reportsApi = {
   daily: (start: string, end: string, agentId?: string) => {

@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, User, Clock, Tag, MoreHorizontal, CheckCircle2,
   Send, ChevronDown, Paperclip, Bold, Italic, Link2,
-  CornerUpLeft, TicketIcon,
+  CornerUpLeft, TicketIcon, Sparkles, Loader2,
 } from 'lucide-react'
 import { useUpdateTicket, useAddMessage } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
 import { useAuth } from '@/lib/auth'
+import { aiApi } from '@/lib/api'
 import type { Ticket, TicketMessage, TicketStatus } from '@/types'
 
 const TICKET_TYPES = [
@@ -53,6 +54,8 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
   )
   const [replyBody, setReplyBody] = useState('')
   const [showCanned, setShowCanned] = useState(false)
+  const [isPolishing, setIsPolishing] = useState(false)
+  const [polishError, setPolishError] = useState<string | null>(null)
   const replyRef = useRef<HTMLTextAreaElement>(null)
 
   // Re-expand last message when ticket changes
@@ -70,6 +73,21 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
 
   const handleResolve = () =>
     updateTicket(ticket.id, { status: 'resolved', updatedAt: new Date().toISOString() })
+
+  const handlePolish = async () => {
+    if (!replyBody.trim() || isPolishing) return
+    setIsPolishing(true)
+    setPolishError(null)
+    try {
+      const { corrected } = await aiApi.grammarCheck(replyBody)
+      setReplyBody(corrected)
+      setTimeout(() => replyRef.current?.focus(), 0)
+    } catch {
+      setPolishError('AI unavailable — check your API key')
+    } finally {
+      setIsPolishing(false)
+    }
+  }
 
   const handleSend = () => {
     const body = replyBody.trim()
@@ -256,21 +274,42 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
 
               {/* Send bar */}
               <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100 bg-gray-50/80">
-                <span className={cn('text-xs', !ticket.ticketType ? 'text-amber-500 font-medium' : 'text-gray-400')}>
+                <span className={cn('text-xs', !ticket.ticketType ? 'text-amber-500 font-medium' : polishError ? 'text-red-500' : 'text-gray-400')}>
                   {!ticket.ticketType
                     ? 'Select a Ticket Type before replying'
-                    : replyBody.trim().length > 0
-                      ? `${replyBody.trim().length} chars · Ctrl+Enter to send`
-                      : 'Ctrl+Enter to send'}
+                    : polishError
+                      ? polishError
+                      : replyBody.trim().length > 0
+                        ? `${replyBody.trim().length} chars · Ctrl+Enter to send`
+                        : 'Ctrl+Enter to send'}
                 </span>
-                <button
-                  onClick={handleSend}
-                  disabled={!replyBody.trim() || !ticket.ticketType}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
-                >
-                  Send Reply
-                  <Send size={12} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* AI Polish button */}
+                  <button
+                    onClick={handlePolish}
+                    disabled={!replyBody.trim() || isPolishing}
+                    title="Polish with AI — fixes grammar and tone"
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
+                      isPolishing
+                        ? 'bg-purple-50 border-purple-200 text-purple-400 cursor-wait'
+                        : 'bg-white border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 disabled:opacity-40 disabled:cursor-not-allowed'
+                    )}
+                  >
+                    {isPolishing
+                      ? <><Loader2 size={12} className="animate-spin" /> Polishing…</>
+                      : <><Sparkles size={12} /> Polish</>
+                    }
+                  </button>
+                  <button
+                    onClick={handleSend}
+                    disabled={!replyBody.trim() || !ticket.ticketType}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                  >
+                    Send Reply
+                    <Send size={12} />
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
