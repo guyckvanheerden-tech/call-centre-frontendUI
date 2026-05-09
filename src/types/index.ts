@@ -3,6 +3,7 @@ export type SLAStatus = 'on_track' | 'at_risk' | 'breached'
 export type UserRole = 'admin' | 'agent'
 export type MessageDirection = 'inbound' | 'outbound'
 export type AlertRecipient = 'agent' | 'admin'
+export type TicketChannel = 'email' | 'whatsapp'
 
 export interface User {
   id: string
@@ -63,6 +64,7 @@ export interface TicketMessage {
   direction: MessageDirection
   from: string
   body: string
+  channel: TicketChannel
   createdAt: string
 }
 
@@ -70,6 +72,8 @@ export interface Ticket {
   id: string
   subject: string
   customerEmail: string
+  customerPhone: string | null
+  channel: TicketChannel
   domain: string
   domainId: string
   status: TicketStatus

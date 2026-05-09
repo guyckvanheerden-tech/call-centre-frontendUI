@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, User, Clock, Tag, MoreHorizontal, CheckCircle2,
   Send, ChevronDown, Paperclip, Bold, Italic, Link2,
-  CornerUpLeft, TicketIcon, Sparkles, Loader2,
+  CornerUpLeft, TicketIcon, Sparkles, Loader2, MessageCircle, Mail,
 } from 'lucide-react'
 import { useUpdateTicket, useAddMessage } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
@@ -119,6 +119,15 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
             <span className="font-mono text-xs text-gray-400">{ticket.id}</span>
             <span className="text-gray-300">·</span>
             <h2 className="text-sm font-semibold text-gray-900 truncate">{ticket.subject}</h2>
+            {ticket.channel === 'whatsapp' ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                <MessageCircle size={9} /> WhatsApp
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">
+                <Mail size={9} /> Email
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <SLAStatusBadge status={ticket.slaStatus} />
@@ -177,21 +186,36 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
               {/* Reply header */}
               <div className="px-5 pt-4 pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2 mb-3">
-                  <CornerUpLeft size={14} className="text-blue-600" />
-                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Reply</span>
+                  {ticket.channel === 'whatsapp' ? (
+                    <>
+                      <MessageCircle size={14} className="text-green-600" />
+                      <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">WhatsApp Reply</span>
+                    </>
+                  ) : (
+                    <>
+                      <CornerUpLeft size={14} className="text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Reply</span>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-baseline gap-3">
                     <span className="text-xs text-gray-400 w-8 flex-shrink-0">To</span>
-                    <span className="text-xs font-medium text-gray-800">{ticket.customerEmail}</span>
-                  </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-xs text-gray-400 w-8 flex-shrink-0">From</span>
-                    <span className="text-xs text-gray-600">
-                      {currentUser?.name ?? 'Agent'}{' '}
-                      <span className="text-gray-400">&lt;{currentUser?.email ?? 'agent@company.com'}&gt;</span>
+                    <span className="text-xs font-medium text-gray-800">
+                      {ticket.channel === 'whatsapp' && ticket.customerPhone
+                        ? ticket.customerPhone
+                        : ticket.customerEmail}
                     </span>
                   </div>
+                  {ticket.channel !== 'whatsapp' && (
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-xs text-gray-400 w-8 flex-shrink-0">From</span>
+                      <span className="text-xs text-gray-600">
+                        {currentUser?.name ?? 'Agent'}{' '}
+                        <span className="text-gray-400">&lt;{currentUser?.email ?? 'agent@company.com'}&gt;</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -304,10 +328,18 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
                   <button
                     onClick={handleSend}
                     disabled={!replyBody.trim() || !ticket.ticketType}
-                    className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-colors shadow-sm',
+                      ticket.channel === 'whatsapp'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    )}
                   >
-                    Send Reply
-                    <Send size={12} />
+                    {ticket.channel === 'whatsapp' ? (
+                      <><MessageCircle size={12} /> Send WhatsApp</>
+                    ) : (
+                      <>Send Reply <Send size={12} /></>
+                    )}
                   </button>
                 </div>
               </div>
@@ -344,6 +376,9 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
 
           <Section title="Ticket Info">
             <MetaRow icon={<User size={12} />} label="Customer" value={ticket.customerEmail} />
+            {ticket.channel === 'whatsapp' && ticket.customerPhone && (
+              <MetaRow icon={<MessageCircle size={12} />} label="WhatsApp" value={ticket.customerPhone} />
+            )}
             <MetaRow icon={<Tag size={12} />} label="Domain" value={ticket.domain} />
             <MetaRow icon={<Clock size={12} />} label="Opened" value={formatRelative(ticket.createdAt)} />
             <div className="mt-3">

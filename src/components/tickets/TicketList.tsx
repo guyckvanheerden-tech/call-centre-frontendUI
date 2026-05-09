@@ -1,13 +1,30 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronUp, ChevronDown, Filter, Plus, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, Filter, Plus, X, Mail, MessageCircle } from 'lucide-react'
 import { useTickets, useCreateTicket, useUpdateTicket } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
 import { useDomains } from '@/hooks/useDomains'
 import { useAuth } from '@/lib/auth'
-import type { Ticket, TicketStatus, SLAStatus, User } from '@/types'
+import type { Ticket, TicketStatus, SLAStatus, User, TicketChannel } from '@/types'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import { cn, formatRelative, ticketStatusConfig } from '@/lib/utils'
+
+function ChannelBadge({ channel }: { channel: TicketChannel }) {
+  if (channel === 'whatsapp') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+        <MessageCircle size={9} />
+        WhatsApp
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">
+      <Mail size={9} />
+      Email
+    </span>
+  )
+}
 
 type SortField = 'id' | 'subject' | 'updatedAt' | 'slaStatus'
 type SortDir   = 'asc' | 'desc'
@@ -231,7 +248,10 @@ function TicketRow({ ticket, onClick, canAssign, assignableAgents, onAssign }: {
       )}>
       <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{ticket.id}</td>
       <td className="px-4 py-3 max-w-xs">
-        <span className="text-gray-900 font-medium line-clamp-1">{ticket.subject}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-gray-900 font-medium line-clamp-1">{ticket.subject}</span>
+          <ChannelBadge channel={ticket.channel ?? 'email'} />
+        </div>
         {ticket.tags.length > 0 && (
           <div className="flex gap-1 mt-0.5">
             {ticket.tags.map((tag) => (
@@ -241,7 +261,11 @@ function TicketRow({ ticket, onClick, canAssign, assignableAgents, onAssign }: {
         )}
       </td>
       <td className="px-4 py-3">
-        <div className="text-gray-700 text-xs font-medium truncate max-w-[180px]">{ticket.customerEmail}</div>
+        <div className="text-gray-700 text-xs font-medium truncate max-w-[180px]">
+          {ticket.channel === 'whatsapp' && ticket.customerPhone
+            ? ticket.customerPhone
+            : ticket.customerEmail}
+        </div>
         <div className="text-gray-400 text-xs truncate max-w-[180px]">{ticket.domain}</div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap"><SLAStatusBadge status={ticket.slaStatus} /></td>
