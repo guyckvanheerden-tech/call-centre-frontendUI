@@ -90,6 +90,35 @@ export interface Ticket {
   tags: string[]
 }
 
+// ── Settings ──────────────────────────────────────────────────
+
+export interface EmailSettings {
+  provider:      'graph' | 'resend'
+  fromEmail:     string
+  fromName:      string
+  replyToDomain: string
+  msTenantId:    string
+  msClientId:    string
+  msClientSecret: string   // returned as '••••••••' when set
+}
+
+export interface WhatsAppSettings {
+  accountSid: string
+  authToken:  string       // returned as '••••••••' when set
+  fromNumber: string
+}
+
+export interface GeneralSettings {
+  companyName: string
+  supportUrl:  string
+}
+
+export interface SettingsCategory<T = Record<string, string>> {
+  category:  string
+  data:      T
+  updatedAt: string | null
+}
+
 export interface KPIData {
   totalOpen: number
   atRisk: number

@@ -14,6 +14,7 @@ const SLAPoliciesPage          = lazy(() => import('@/pages/SLAPoliciesPage'))
 const DomainRoutingPage        = lazy(() => import('@/pages/DomainRoutingPage'))
 const NotificationControlsPage = lazy(() => import('@/pages/NotificationControlsPage'))
 const OnlineAgentsPage         = lazy(() => import('@/pages/OnlineAgentsPage'))
+const AdminSettingsPage        = lazy(() => import('@/pages/AdminSettingsPage'))
 
 function Loader() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/admin/domain-routing"   element={<DomainRoutingPage />} />
           <Route path="/admin/notifications"    element={<NotificationControlsPage />} />
           <Route path="/admin/online-agents"    element={<OnlineAgentsPage />} />
+          <Route path="/admin/settings"         element={<AdminSettingsPage />} />
           <Route path="*"                       element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

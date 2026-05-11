@@ -84,6 +84,15 @@ export const aiApi = {
     post<{ corrected: string }>('/ai/grammar-check', { text }),
 }
 
+// ── Settings ──────────────────────────────────────────────────
+export const settingsApi = {
+  list:      ()                                         => get<SettingsCategory[]>('/settings'),
+  get:       (category: string)                         => get<SettingsCategory>(`/settings/${category}`),
+  update:    (category: string, data: Record<string, string>) =>
+    request<{ ok: boolean }>('PUT', `/settings/${category}`, data),
+  testEmail: (to: string)                               => post<{ ok: boolean }>('/settings/test-email', { to }),
+}
+
 // ── Reports ───────────────────────────────────────────────────
 export const reportsApi = {
   daily: (start: string, end: string, agentId?: string) => {
@@ -100,7 +109,7 @@ export const reportsApi = {
 // ── Shared types (mirrors src/types/index.ts) ─────────────────
 import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
-  NotificationSettings, KPIData, DailyRow,
+  NotificationSettings, KPIData, DailyRow, SettingsCategory,
 } from '@/types'
 
 interface CreateTicketInput { subject: string; customerEmail: string; domainId: string }
