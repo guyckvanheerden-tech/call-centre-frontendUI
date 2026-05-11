@@ -48,13 +48,20 @@ export default function Sidebar() {
 
   return (
     <aside className="w-[220px] min-h-screen bg-[#0f172a] flex flex-col flex-shrink-0">
-      {/* Logo */}
+      {/* Logo + Tenant name */}
       <div className="h-14 flex items-center px-4 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <Zap size={14} className="text-white" />
           </div>
-          <span className="text-white font-semibold text-sm tracking-tight">SupportDesk</span>
+          <div className="min-w-0">
+            <div className="text-white font-semibold text-sm tracking-tight truncate">
+              {profile?.tenant?.name ?? 'SupportDesk'}
+            </div>
+            {profile?.tenant?.name && (
+              <div className="text-slate-500 text-[10px] truncate">SupportDesk</div>
+            )}
+          </div>
         </div>
       </div>
 

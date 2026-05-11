@@ -5,16 +5,26 @@ export type MessageDirection = 'inbound' | 'outbound'
 export type AlertRecipient = 'agent' | 'admin'
 export type TicketChannel = 'email' | 'whatsapp'
 
+export interface Tenant {
+  id:      string
+  name:    string
+  slug:    string
+  logoUrl?: string
+  plan:    string
+}
+
 export interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  avatar?: string
-  enabled: boolean
-  online?: boolean
-  createdAt: string
-  signature?: string
+  id:       string
+  name:     string
+  email:    string
+  role:     UserRole
+  avatar?:  string
+  enabled:  boolean
+  online?:  boolean
+  tenantId: string
+  tenant?:  Tenant
+  createdAt:      string
+  signature?:     string
   signatureImage?: string  // base64 data URL
 }
 

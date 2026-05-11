@@ -4,22 +4,21 @@ import { supabase } from './supabase'
 import type { User } from '@/types'
 
 interface AuthContextValue {
-  session:     Session | null
-  supaUser:    SupabaseUser | null
-  profile:     User | null
-  loading:     boolean
-  signIn:      (email: string, password: string) => Promise<string | null>
-  signOut:     () => Promise<void>
+  session:  Session | null
+  supaUser: SupabaseUser | null
+  profile:  User | null
+  loading:  boolean
+  signIn:   (email: string, password: string) => Promise<string | null>
+  signOut:  () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session,  setSession]  = useState<Session | null>(null)
-  const [profile,  setProfile]  = useState<User | null>(null)
-  const [loading,  setLoading]  = useState(true)
+  const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Load initial session and listen for changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
@@ -37,13 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function fetchProfile(userId: string) {
+    // Join the tenants table so the sidebar can display the tenant name
     const { data } = await supabase
       .from('users')
-      .select('*')
+      .select('*, tenants(id, name, slug, logo_url, plan)')
       .eq('id', userId)
       .single()
 
     if (data) {
+      const tenantRow = data.tenants as {
+        id: string; name: string; slug: string; logo_url: string | null; plan: string
+      } | null
+
       setProfile({
         id:             data.id,
         name:           data.name,
@@ -51,6 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role:           data.role,
         enabled:        data.enabled,
         online:         data.online,
+        tenantId:       data.tenant_id,
+        tenant:         tenantRow ? {
+          id:      tenantRow.id,
+          name:    tenantRow.name,
+          slug:    tenantRow.slug,
+          logoUrl: tenantRow.logo_url ?? undefined,
+          plan:    tenantRow.plan,
+        } : undefined,
         signature:      data.signature,
         signatureImage: data.signature_image,
         createdAt:      data.created_at,
@@ -63,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return error.message
 
-    // Mark user online via the API
     const { data } = await supabase.auth.getSession()
     if (data.session) {
       await fetch(`${import.meta.env.VITE_API_URL}/users/${data.session.user.id}`, {
@@ -80,7 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    // Mark user offline before signing out
     if (session) {
       await fetch(`${import.meta.env.VITE_API_URL}/users/${session.user.id}`, {
         method:  'PATCH',
