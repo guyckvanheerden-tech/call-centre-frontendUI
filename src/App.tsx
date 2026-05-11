@@ -15,6 +15,7 @@ const DomainRoutingPage        = lazy(() => import('@/pages/DomainRoutingPage'))
 const NotificationControlsPage = lazy(() => import('@/pages/NotificationControlsPage'))
 const OnlineAgentsPage         = lazy(() => import('@/pages/OnlineAgentsPage'))
 const AdminSettingsPage        = lazy(() => import('@/pages/AdminSettingsPage'))
+const AgentHoursPage           = lazy(() => import('@/pages/AgentHoursPage'))
 
 function Loader() {
   return (
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/admin/notifications"    element={<NotificationControlsPage />} />
           <Route path="/admin/online-agents"    element={<OnlineAgentsPage />} />
           <Route path="/admin/settings"         element={<AdminSettingsPage />} />
+          <Route path="/admin/agent-hours"      element={<AgentHoursPage />} />
           <Route path="*"                       element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

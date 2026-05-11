@@ -28,6 +28,7 @@ const navItems: NavItem[] = [
       { label: 'SLA Policies',           to: '/admin/sla-policies' },
       { label: 'Domain Routing',         to: '/admin/domain-routing' },
       { label: 'Notification Controls',  to: '/admin/notifications' },
+      { label: 'Agent Hours',             to: '/admin/agent-hours' },
       { label: 'System Settings',        to: '/admin/settings' },
     ],
   },
