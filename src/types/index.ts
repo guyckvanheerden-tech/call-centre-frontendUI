@@ -126,6 +126,38 @@ export interface KPIData {
   avgResponseMinutes: number
 }
 
+export interface AgentSession {
+  start:   string
+  end:     string | null
+  minutes: number
+}
+
+export interface AgentDailyBreakdown {
+  date:    string
+  label:   string
+  minutes: number
+  hours:   number
+}
+
+export interface AgentHoursRow {
+  userId:            string
+  name:              string
+  email:             string
+  totalMinutes:      number
+  totalHours:        number
+  sessionCount:      number
+  avgSessionMinutes: number
+  firstLogin:        string | null
+  lastLogin:         string | null
+  sessions:          AgentSession[]
+  dailyBreakdown:    AgentDailyBreakdown[]
+}
+
+export interface AgentHoursReport {
+  dateRange: string[]
+  agents:    AgentHoursRow[]
+}
+
 export interface DailyRow {
   isoDate: string
   label: string

@@ -104,12 +104,17 @@ export const reportsApi = {
     const params = agentId ? `?agentId=${agentId}` : ''
     return get<KPIData>(`/reports/kpi${params}`)
   },
+  agentHours: (start: string, end: string, agentId?: string) => {
+    const params = new URLSearchParams({ start, end })
+    if (agentId) params.set('agentId', agentId)
+    return get<AgentHoursReport>(`/reports/agent-hours?${params}`)
+  },
 }
 
 // ── Shared types (mirrors src/types/index.ts) ─────────────────
 import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
-  NotificationSettings, KPIData, DailyRow, SettingsCategory,
+  NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
 } from '@/types'
 
 interface CreateTicketInput { subject: string; customerEmail: string; domainId: string }

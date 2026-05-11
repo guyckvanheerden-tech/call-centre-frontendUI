@@ -17,3 +17,12 @@ export function useReportKPI(agentId?: string) {
     staleTime: 30_000,
   })
 }
+
+export function useAgentHours(start: string, end: string, agentId?: string) {
+  return useQuery({
+    queryKey: ['reports', 'agent-hours', start, end, agentId ?? 'all'],
+    queryFn:  () => reportsApi.agentHours(start, end, agentId),
+    enabled:  !!start && !!end,
+    staleTime: 60_000,
+  })
+}
