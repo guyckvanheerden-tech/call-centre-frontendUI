@@ -93,6 +93,13 @@ export const settingsApi = {
   testEmail: (to: string)                               => post<{ ok: boolean }>('/settings/test-email', { to }),
 }
 
+// ── Tenants (super-admin) ─────────────────────────────────────
+export const tenantsApi = {
+  list:   ()                                              => get<TenantWithStats[]>('/tenants'),
+  create: (body: CreateTenantInput)                       => post<TenantWithStats>('/tenants', body),
+  update: (id: string, body: Partial<UpdateTenantInput>)  => patch<TenantWithStats>(`/tenants/${id}`, body),
+}
+
 // ── Ticket Statuses ───────────────────────────────────────────
 export const ticketStatusesApi = {
   list:   ()                                              => get<TicketStatusDef[]>('/ticket-statuses'),
@@ -131,9 +138,14 @@ export const reportsApi = {
 import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
   NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
-  TicketStatusDef, TicketTypeDef,
+  TicketStatusDef, TicketTypeDef, TenantWithStats,
 } from '@/types'
 
+interface CreateTenantInput {
+  name: string; slug: string; plan: string
+  adminName?: string; adminEmail?: string; adminPassword?: string
+}
+interface UpdateTenantInput { name: string; slug: string; plan: string }
 interface CreateTicketInput { subject: string; customerEmail: string; domainId: string }
 interface AddMessageInput   { body: string; direction: 'inbound' | 'outbound' }
 interface CreateUserInput   { name: string; email: string; role: string; password: string }

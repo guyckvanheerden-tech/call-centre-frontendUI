@@ -1,6 +1,6 @@
 export type TicketStatus = string   // Dynamic — configured per tenant via ticket_statuses table
 export type SLAStatus = 'on_track' | 'at_risk' | 'breached'
-export type UserRole = 'admin' | 'agent'
+export type UserRole = 'admin' | 'agent' | 'super_admin'
 export type MessageDirection = 'inbound' | 'outbound'
 export type AlertRecipient = 'agent' | 'admin'
 export type TicketChannel = 'email' | 'whatsapp'
@@ -166,6 +166,13 @@ export interface AgentHoursRow {
 export interface AgentHoursReport {
   dateRange: string[]
   agents:    AgentHoursRow[]
+}
+
+// ── Tenant (with stats for super-admin view) ──────────────────────────────
+
+export interface TenantWithStats extends Tenant {
+  userCount:   number
+  ticketCount: number
 }
 
 // ── Ticket config (per-tenant) ─────────────────────────────────────────────

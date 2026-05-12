@@ -5,8 +5,9 @@ import type { User, UserRole } from '@/types'
 import { cn, formatRelative } from '@/lib/utils'
 
 const roleConfig: Record<UserRole, { label: string; color: string; bg: string }> = {
-  admin: { label: 'Admin', color: 'text-purple-700', bg: 'bg-purple-50'  },
-  agent: { label: 'Agent', color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  admin:       { label: 'Admin',       color: 'text-purple-700', bg: 'bg-purple-50'  },
+  agent:       { label: 'Agent',       color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  super_admin: { label: 'Super Admin', color: 'text-blue-700',   bg: 'bg-blue-50'    },
 }
 
 const ACCEPTED = 'image/png,image/jpeg'

@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Ticket, ShieldAlert, BarChart2, Settings,
-  ChevronDown, ChevronRight, Zap
+  ChevronDown, ChevronRight, Zap, Building2
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth'
@@ -13,6 +13,7 @@ interface NavItem {
   icon: React.ReactNode
   children?: { label: string; to: string }[]
   adminOnly?: boolean
+  superAdminOnly?: boolean
 }
 
 const navItems: NavItem[] = [
@@ -20,6 +21,13 @@ const navItems: NavItem[] = [
   { label: 'Tickets',        to: '/tickets',        icon: <Ticket size={16} /> },
   { label: 'SLA Monitoring', to: '/sla-monitoring', icon: <ShieldAlert size={16} /> },
   { label: 'Reports',        to: '/reports',        icon: <BarChart2 size={16} /> },
+  {
+    label: 'Super Admin', superAdminOnly: true,
+    icon: <Building2 size={16} />,
+    children: [
+      { label: 'Tenants', to: '/super-admin/tenants' },
+    ],
+  },
   {
     label: 'Admin', adminOnly: true,
     icon: <Settings size={16} />,
@@ -39,14 +47,17 @@ const navItems: NavItem[] = [
 export default function Sidebar() {
   const location  = useLocation()
   const adminOpen = location.pathname.startsWith('/admin')
-  const [adminExpanded, setAdminExpanded] = useState(adminOpen)
+  const superAdminOpen = location.pathname.startsWith('/super-admin')
+  const [adminExpanded,      setAdminExpanded]      = useState(adminOpen)
+  const [superAdminExpanded, setSuperAdminExpanded] = useState(superAdminOpen)
   const { profile } = useAuth()
 
-  const isOnline = !!profile?.online
-  const initials  = profile?.name
+  const isOnline      = !!profile?.online
+  const initials      = profile?.name
     ? profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : '?'
-  const isAdmin   = profile?.role === 'admin'
+  const isAdmin       = profile?.role === 'admin'
+  const isSuperAdmin  = profile?.role === 'super_admin'
 
   return (
     <aside className="w-[220px] min-h-screen bg-[#0f172a] flex flex-col flex-shrink-0">
@@ -70,22 +81,28 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto scrollbar-thin">
         {navItems.map((item) => {
-          if (item.adminOnly && !isAdmin) return null
+          if (item.adminOnly      && !isAdmin)      return null
+          if (item.superAdminOnly && !isSuperAdmin) return null
 
           if (item.children) {
+            const isSuperSection = !!item.superAdminOnly
+            const expanded       = isSuperSection ? superAdminExpanded : adminExpanded
+            const toggle         = isSuperSection
+              ? () => setSuperAdminExpanded(!superAdminExpanded)
+              : () => setAdminExpanded(!adminExpanded)
             return (
               <div key={item.label}>
                 <button
-                  onClick={() => setAdminExpanded(!adminExpanded)}
+                  onClick={toggle}
                   className={cn(
                     'w-full flex items-center justify-between px-4 py-2 text-sm',
                     'text-slate-400 hover:text-white hover:bg-white/5 transition-colors',
-                    adminExpanded && 'text-white'
+                    expanded && 'text-white'
                   )}>
                   <span className="flex items-center gap-2.5">{item.icon}{item.label}</span>
-                  {adminExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                  {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 </button>
-                {adminExpanded && (
+                {expanded && (
                   <div className="ml-4 pl-3 border-l border-white/10">
                     {item.children.map((child) => (
                       <NavLink key={child.to} to={child.to}
