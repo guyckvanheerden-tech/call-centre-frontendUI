@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Ticket, ShieldAlert, BarChart2, Settings,
-  ChevronDown, ChevronRight, Zap, Building2
+  ChevronDown, ChevronRight, Zap, Building2, SlidersHorizontal
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/lib/auth'
@@ -17,10 +17,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',      to: '/',              icon: <LayoutDashboard size={16} /> },
-  { label: 'Tickets',        to: '/tickets',        icon: <Ticket size={16} /> },
-  { label: 'SLA Monitoring', to: '/sla-monitoring', icon: <ShieldAlert size={16} /> },
-  { label: 'Reports',        to: '/reports',        icon: <BarChart2 size={16} /> },
+  { label: 'Dashboard',        to: '/',               icon: <LayoutDashboard size={16} /> },
+  { label: 'Tickets',          to: '/tickets',         icon: <Ticket size={16} /> },
+  { label: 'SLA Monitoring',   to: '/sla-monitoring',  icon: <ShieldAlert size={16} /> },
+  { label: 'Reports',          to: '/reports',         icon: <BarChart2 size={16} /> },
+  { label: 'My Preferences',   to: '/my-preferences',  icon: <SlidersHorizontal size={16} /> },
   {
     label: 'Super Admin', superAdminOnly: true,
     icon: <Building2 size={16} />,
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
       { label: 'Agent Hours',             to: '/admin/agent-hours' },
       { label: 'Ticket Settings',          to: '/admin/ticket-settings' },
       { label: 'Phone Settings',         to: '/admin/phone-settings' },
+      { label: 'Webchat Settings',       to: '/admin/webchat-settings' },
       { label: 'System Settings',        to: '/admin/settings' },
     ],
   },

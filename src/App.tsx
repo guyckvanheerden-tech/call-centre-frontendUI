@@ -18,6 +18,8 @@ const AdminSettingsPage        = lazy(() => import('@/pages/AdminSettingsPage'))
 const AgentHoursPage           = lazy(() => import('@/pages/AgentHoursPage'))
 const TicketSettingsPage       = lazy(() => import('@/pages/TicketSettingsPage'))
 const PhoneSettingsPage        = lazy(() => import('@/pages/PhoneSettingsPage'))
+const WebchatSettingsPage      = lazy(() => import('@/pages/WebchatSettingsPage'))
+const MyPreferencesPage        = lazy(() => import('@/pages/MyPreferencesPage'))
 const TenantManagementPage     = lazy(() => import('@/pages/TenantManagementPage'))
 
 function Loader() {
@@ -71,6 +73,8 @@ export default function App() {
           <Route path="/admin/agent-hours"      element={<AgentHoursPage />} />
           <Route path="/admin/ticket-settings"    element={<TicketSettingsPage />} />
           <Route path="/admin/phone-settings"     element={<PhoneSettingsPage />} />
+          <Route path="/admin/webchat-settings"   element={<WebchatSettingsPage />} />
+          <Route path="/my-preferences"           element={<MyPreferencesPage />} />
           <Route path="/super-admin/tenants"      element={<TenantManagementPage />} />
           <Route path="*"                       element={<Navigate to="/" replace />} />
         </Route>

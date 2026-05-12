@@ -139,7 +139,7 @@ import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
   NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
   TicketStatusDef, TicketTypeDef, TenantWithStats,
-  Call, PhoneSettings,
+  Call, PhoneSettings, WidgetSettings, ChatSession, ChannelPreferences,
 } from '@/types'
 
 interface CreateTenantInput {
@@ -175,6 +175,29 @@ export const phoneApi = {
   /** Update phone/PBX settings */
   updateSettings: (patch: Partial<PhoneSettings> & { webhookSecret?: string; dialAuthHeader?: string }) =>
     patch_<PhoneSettings>('/phone/settings', patch),
+}
+
+// ── Webchat channel ────────────────────────────────────────────────────────
+
+export const webchatApi = {
+  /** Get widget settings */
+  getSettings: () => get<WidgetSettings>('/webchat/settings'),
+
+  /** Update widget settings (admin) */
+  updateSettings: (body: Partial<WidgetSettings>) => patch_<WidgetSettings>('/webchat/settings', body),
+
+  /** List recent chat sessions */
+  listSessions: () => get<ChatSession[]>('/webchat/sessions'),
+
+  /** Close a chat session */
+  closeSession: (id: string) => patch_<{ ok: boolean }>(`/webchat/sessions/${id}/close`, {}),
+}
+
+// ── Channel preferences ──────────────────────────────────────────────────────
+
+export const channelPrefsApi = {
+  update: (userId: string, prefs: Partial<ChannelPreferences>) =>
+    patch_<User>(`/users/${userId}`, { channelPreferences: prefs }),
 }
 
 // helper alias — 'patch' is already declared as a const above

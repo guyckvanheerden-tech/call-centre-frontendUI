@@ -3,7 +3,7 @@ export type SLAStatus = 'on_track' | 'at_risk' | 'breached'
 export type UserRole = 'admin' | 'agent' | 'super_admin'
 export type MessageDirection = 'inbound' | 'outbound'
 export type AlertRecipient = 'agent' | 'admin'
-export type TicketChannel = 'email' | 'whatsapp' | 'phone'
+export type TicketChannel = 'email' | 'whatsapp' | 'phone' | 'webchat'
 
 export interface Tenant {
   id:      string
@@ -21,7 +21,8 @@ export interface User {
   avatar?:  string
   enabled:  boolean
   online?:    boolean
-  extension?: string | null   // phone extension for click-to-call
+  extension?:          string | null   // phone extension for click-to-call
+  channelPreferences?: ChannelPreferences
   tenantId: string
   tenant?:  Tenant
   createdAt:      string
@@ -227,6 +228,35 @@ export interface PhoneSettings {
   dialUrl:        string | null
   dialAuthHeader: string | null   // masked as '••••••••' when set
   webhookSecret:  string | null   // masked as '••••••••' when set
+}
+
+// ── Webchat channel ────────────────────────────────────────────────────────
+
+export interface WidgetSettings {
+  id?:          string
+  enabled:      boolean
+  widget_color: string
+  greeting:     string
+  agent_label:  string
+  offline_msg:  string
+}
+
+export interface ChatSession {
+  id:            string
+  ticketId:      string | null
+  visitorName:   string | null
+  visitorEmail:  string | null
+  status:        'open' | 'closed'
+  startedAt:     string
+}
+
+// ── Channel preferences (per user) ─────────────────────────────────────────
+
+export interface ChannelPreferences {
+  email:    boolean
+  phone:    boolean
+  webchat:  boolean
+  whatsapp: boolean
 }
 
 // ── Reports ────────────────────────────────────────────────────────────────

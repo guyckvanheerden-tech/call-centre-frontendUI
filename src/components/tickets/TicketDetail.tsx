@@ -124,6 +124,10 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
                 <Phone size={9} /> Phone
               </span>
+            ) : ticket.channel === 'webchat' ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full">
+                <MessageCircle size={9} /> Webchat
+              </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">
                 <Mail size={9} /> Email
