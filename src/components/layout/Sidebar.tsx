@@ -29,6 +29,8 @@ const navItems: NavItem[] = [
       { label: 'Domain Routing',         to: '/admin/domain-routing' },
       { label: 'Notification Controls',  to: '/admin/notifications' },
       { label: 'Agent Hours',             to: '/admin/agent-hours' },
+      { label: 'Ticket Statuses',        to: '/admin/ticket-statuses' },
+      { label: 'Ticket Types',           to: '/admin/ticket-types' },
       { label: 'System Settings',        to: '/admin/settings' },
     ],
   },

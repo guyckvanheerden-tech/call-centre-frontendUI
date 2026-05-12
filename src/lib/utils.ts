@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, differenceInMinutes, format } from 'date-fns'
-import type { SLAStatus, TicketStatus } from '@/types'
+import type { SLAStatus, TicketStatusDef } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -44,9 +44,30 @@ export const slaStatusConfig: Record<SLAStatus, { label: string; color: string; 
   breached: { label: 'Breached', color: 'text-red-700',     bg: 'bg-red-50',     dot: 'bg-red-500'    },
 }
 
-export const ticketStatusConfig: Record<TicketStatus, { label: string; color: string; bg: string }> = {
-  open:             { label: 'Open',               color: 'text-blue-700',   bg: 'bg-blue-50'    },
-  pending:          { label: 'Pending / In Progress', color: 'text-amber-700',  bg: 'bg-amber-50'   },
-  waiting_3rd_party:{ label: 'Waiting on 3rd Party', color: 'text-purple-700', bg: 'bg-purple-50'  },
-  resolved:         { label: 'Resolved',           color: 'text-gray-600',   bg: 'bg-gray-100'   },
+/**
+ * Convert a hex colour (e.g. '#3B82F6') to inline React styles for a badge.
+ * Background is the colour at 12% opacity; text uses the full colour.
+ */
+export function colorToStyle(hex: string): React.CSSProperties {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return {
+    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    color: hex,
+  }
+}
+
+/**
+ * Look up a status definition by name from the dynamic list.
+ * Falls back to a neutral grey style if not found.
+ */
+export function findStatusDef(
+  name: string,
+  statuses: TicketStatusDef[],
+): { label: string; style: React.CSSProperties } {
+  const found = statuses.find((s) => s.name === name)
+  return found
+    ? { label: found.label, style: colorToStyle(found.color) }
+    : { label: name, style: { backgroundColor: 'rgba(107,114,128,0.12)', color: '#6B7280' } }
 }

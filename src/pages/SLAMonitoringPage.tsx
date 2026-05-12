@@ -5,11 +5,13 @@ import KPICards from '@/components/dashboard/KPICards'
 import { BreachTrendChart, ResponseTrendChart } from '@/components/dashboard/Charts'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import SLACountdown from '@/components/sla/SLACountdown'
-import { formatRelative, ticketStatusConfig, cn } from '@/lib/utils'
+import { formatRelative, findStatusDef, cn } from '@/lib/utils'
+import { useTicketStatuses } from '@/hooks/useTicketStatuses'
 import { format, subDays } from 'date-fns'
 
 export default function SLAMonitoringPage() {
-  const { data: tickets = [] } = useTickets()
+  const { data: tickets = [] }  = useTickets()
+  const { data: statuses = [] } = useTicketStatuses()
   const { data: kpi } = useReportKPI()
   const navigate = useNavigate()
 
@@ -18,8 +20,9 @@ export default function SLAMonitoringPage() {
   const end7   = format(today, 'yyyy-MM-dd')
   const { data: last7 = [] } = useReportDaily(start7, end7)
 
+  const resolvedNames = new Set(statuses.filter((s) => s.isResolved).map((s) => s.name))
   const active = tickets
-    .filter((t) => t.status !== 'resolved')
+    .filter((t) => !resolvedNames.has(t.status))
     .sort((a, b) => {
       const order: Record<string, number> = { breached: 0, at_risk: 1, on_track: 2 }
       return (order[a.slaStatus] ?? 3) - (order[b.slaStatus] ?? 3)
@@ -59,7 +62,7 @@ export default function SLAMonitoringPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {active.map((ticket) => {
-                const sc = ticketStatusConfig[ticket.status]
+                const { label: statusLabel, style: statusStyle } = findStatusDef(ticket.status, statuses)
                 return (
                   <tr
                     key={ticket.id}
@@ -72,8 +75,8 @@ export default function SLAMonitoringPage() {
                     </td>
                     <td className="px-4 py-3"><SLAStatusBadge status={ticket.slaStatus} /></td>
                     <td className="px-4 py-3">
-                      <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', sc.bg, sc.color)}>
-                        {sc.label}
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={statusStyle}>
+                        {statusLabel}
                       </span>
                     </td>
                     <td className="px-4 py-3">

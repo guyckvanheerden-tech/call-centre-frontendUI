@@ -4,10 +4,11 @@ import { ChevronUp, ChevronDown, Filter, Plus, X, Mail, MessageCircle } from 'lu
 import { useTickets, useCreateTicket, useUpdateTicket } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
 import { useDomains } from '@/hooks/useDomains'
+import { useTicketStatuses } from '@/hooks/useTicketStatuses'
 import { useAuth } from '@/lib/auth'
-import type { Ticket, TicketStatus, SLAStatus, User, TicketChannel } from '@/types'
+import type { Ticket, TicketStatus, SLAStatus, User, TicketChannel, TicketStatusDef } from '@/types'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
-import { cn, formatRelative, ticketStatusConfig } from '@/lib/utils'
+import { cn, formatRelative, findStatusDef } from '@/lib/utils'
 
 function ChannelBadge({ channel }: { channel: TicketChannel }) {
   if (channel === 'whatsapp') {
@@ -36,7 +37,14 @@ export default function TicketList() {
 
   const { data: tickets = [],  isLoading: ticketsLoading } = useTickets()
   const { data: users   = [] }                              = useUsers()
+  const { data: statuses = [] }                             = useTicketStatuses()
   const updateTicket   = useUpdateTicket()
+
+  // Names of statuses that mark a ticket as closed
+  const resolvedNames = useMemo(
+    () => new Set(statuses.filter((s) => s.isResolved).map((s) => s.name)),
+    [statuses]
+  )
 
   const [showNewTicket, setShowNewTicket] = useState(false)
 
@@ -62,7 +70,7 @@ export default function TicketList() {
 
   const filtered = useMemo(() => {
     let t = [...visibleTickets]
-    if (filterStatus === 'active')       t = t.filter((x) => x.status !== 'resolved')
+    if (filterStatus === 'active')       t = t.filter((x) => !resolvedNames.has(x.status))
     else if (filterStatus !== 'all')     t = t.filter((x) => x.status === filterStatus)
     if (filterSLA    !== 'all')          t = t.filter((x) => x.slaStatus === filterSLA)
     if (filterDomain !== 'all')          t = t.filter((x) => x.domain   === filterDomain)
@@ -75,7 +83,7 @@ export default function TicketList() {
       return sortDir === 'asc' ? val : -val
     })
     return t
-  }, [visibleTickets, filterStatus, filterSLA, filterDomain, sortField, sortDir])
+  }, [visibleTickets, filterStatus, filterSLA, filterDomain, sortField, sortDir, resolvedNames])
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) setSortDir((d) => d === 'asc' ? 'desc' : 'asc')
@@ -139,12 +147,9 @@ export default function TicketList() {
         <FilterChip label="Status" value={filterStatus}
           onChange={(v) => setFilterStatus(v as TicketStatus | 'all' | 'active')}
           options={[
-            { value: 'active',            label: 'Active (default)' },
-            { value: 'all',               label: 'All Statuses' },
-            { value: 'open',              label: 'Open' },
-            { value: 'pending',           label: 'Pending / In Progress' },
-            { value: 'waiting_3rd_party', label: 'Waiting on 3rd Party' },
-            { value: 'resolved',          label: 'Resolved' },
+            { value: 'active', label: 'Active (default)' },
+            { value: 'all',    label: 'All Statuses' },
+            ...statuses.map((s) => ({ value: s.name, label: s.label })),
           ]} />
         <FilterChip label="SLA" value={filterSLA}
           onChange={(v) => setFilterSLA(v as SLAStatus | 'all')}
@@ -188,6 +193,7 @@ export default function TicketList() {
               <TicketRow
                 key={ticket.id}
                 ticket={ticket}
+                statuses={statuses}
                 onClick={() => navigate(`/tickets/${ticket.id}`)}
                 canAssign={canAssign}
                 assignableAgents={assignableAgents}
@@ -234,11 +240,11 @@ function FilterChip({ value, onChange, options }: {
   )
 }
 
-function TicketRow({ ticket, onClick, canAssign, assignableAgents, onAssign }: {
-  ticket: Ticket; onClick: () => void; canAssign: boolean
+function TicketRow({ ticket, statuses, onClick, canAssign, assignableAgents, onAssign }: {
+  ticket: Ticket; statuses: TicketStatusDef[]; onClick: () => void; canAssign: boolean
   assignableAgents: User[]; onAssign: (id: string) => void
 }) {
-  const statusCfg = ticketStatusConfig[ticket.status]
+  const { label: statusLabel, style: statusStyle } = findStatusDef(ticket.status, statuses)
   return (
     <tr onClick={onClick}
       className={cn(
@@ -270,8 +276,8 @@ function TicketRow({ ticket, onClick, canAssign, assignableAgents, onAssign }: {
       </td>
       <td className="px-4 py-3 whitespace-nowrap"><SLAStatusBadge status={ticket.slaStatus} /></td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', statusCfg.bg, statusCfg.color)}>
-          {statusCfg.label}
+        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={statusStyle}>
+          {statusLabel}
         </span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => canAssign && e.stopPropagation()}>

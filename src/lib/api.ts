@@ -93,6 +93,22 @@ export const settingsApi = {
   testEmail: (to: string)                               => post<{ ok: boolean }>('/settings/test-email', { to }),
 }
 
+// ── Ticket Statuses ───────────────────────────────────────────
+export const ticketStatusesApi = {
+  list:   ()                                              => get<TicketStatusDef[]>('/ticket-statuses'),
+  create: (body: Omit<TicketStatusDef, 'id'>)             => post<TicketStatusDef>('/ticket-statuses', body),
+  update: (id: string, body: Partial<TicketStatusDef>)    => patch<TicketStatusDef>(`/ticket-statuses/${id}`, body),
+  delete: (id: string)                                    => del(`/ticket-statuses/${id}`),
+}
+
+// ── Ticket Types ──────────────────────────────────────────────
+export const ticketTypesApi = {
+  list:   ()                                              => get<TicketTypeDef[]>('/ticket-types'),
+  create: (body: Omit<TicketTypeDef, 'id'>)               => post<TicketTypeDef>('/ticket-types', body),
+  update: (id: string, body: Partial<TicketTypeDef>)      => patch<TicketTypeDef>(`/ticket-types/${id}`, body),
+  delete: (id: string)                                    => del(`/ticket-types/${id}`),
+}
+
 // ── Reports ───────────────────────────────────────────────────
 export const reportsApi = {
   daily: (start: string, end: string, agentId?: string) => {
@@ -115,6 +131,7 @@ export const reportsApi = {
 import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
   NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
+  TicketStatusDef, TicketTypeDef,
 } from '@/types'
 
 interface CreateTicketInput { subject: string; customerEmail: string; domainId: string }

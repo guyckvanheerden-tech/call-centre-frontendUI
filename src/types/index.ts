@@ -1,4 +1,4 @@
-export type TicketStatus = 'open' | 'pending' | 'waiting_3rd_party' | 'resolved'
+export type TicketStatus = string   // Dynamic — configured per tenant via ticket_statuses table
 export type SLAStatus = 'on_track' | 'at_risk' | 'breached'
 export type UserRole = 'admin' | 'agent'
 export type MessageDirection = 'inbound' | 'outbound'
@@ -167,6 +167,28 @@ export interface AgentHoursReport {
   dateRange: string[]
   agents:    AgentHoursRow[]
 }
+
+// ── Ticket config (per-tenant) ─────────────────────────────────────────────
+
+export interface TicketStatusDef {
+  id:         string
+  name:       string    // stored in tickets.status  (e.g. 'open')
+  label:      string    // display label             (e.g. 'Open')
+  color:      string    // hex badge colour           (e.g. '#3B82F6')
+  sortOrder:  number
+  isDefault:  boolean   // applied automatically to new tickets
+  isResolved: boolean   // ticket is considered closed when in this status
+}
+
+export interface TicketTypeDef {
+  id:        string
+  name:      string     // stored in tickets.ticket_type
+  label:     string
+  color:     string
+  sortOrder: number
+}
+
+// ── Reports ────────────────────────────────────────────────────────────────
 
 export interface DailyRow {
   isoDate: string

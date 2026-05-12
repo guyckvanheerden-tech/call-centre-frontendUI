@@ -7,25 +7,14 @@ import {
 } from 'lucide-react'
 import { useUpdateTicket, useAddMessage } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
+import { useTicketStatuses } from '@/hooks/useTicketStatuses'
+import { useTicketTypes } from '@/hooks/useTicketTypes'
 import { useAuth } from '@/lib/auth'
 import { aiApi } from '@/lib/api'
-import type { Ticket, TicketMessage, TicketStatus } from '@/types'
-
-const TICKET_TYPES = [
-  'Lead',
-  'Quote',
-  'Reservation - SA',
-  'Cancellations',
-  'PO/Vouchers',
-  'Conference',
-  'Account query',
-  'POP',
-  'Amendments',
-  'Reservation - INT',
-] as const
+import type { Ticket, TicketMessage } from '@/types'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import SLACountdown from '@/components/sla/SLACountdown'
-import { cn, formatDateTime, formatRelative, ticketStatusConfig } from '@/lib/utils'
+import { cn, formatDateTime, formatRelative, findStatusDef } from '@/lib/utils'
 
 const cannedResponses = [
   { id: 'c1', label: 'Initial Acknowledgement',
@@ -45,8 +34,15 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
   const { data: users = [] } = useUsers()
   const { profile: currentUser } = useAuth()
 
+  const { data: statuses = [] } = useTicketStatuses()
+  const { data: ticketTypes = [] } = useTicketTypes()
+
   const updateTicket = (id: string, patch: Partial<Ticket>) => updateTicketMutate({ id, patch })
   const agents = users.filter((u) => u.role === 'agent')
+
+  // Find the first "resolved" status name (for the Resolve button)
+  const resolvedStatusName = statuses.find((s) => s.isResolved)?.name ?? 'resolved'
+  const currentStatusDef   = statuses.find((s) => s.name === ticket.status)
 
   // All messages collapsed except the last one
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
@@ -72,7 +68,7 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
     })
 
   const handleResolve = () =>
-    updateTicket(ticket.id, { status: 'resolved', updatedAt: new Date().toISOString() })
+    updateTicket(ticket.id, { status: resolvedStatusName, updatedAt: new Date().toISOString() })
 
   const handlePolish = async () => {
     if (!replyBody.trim() || isPolishing) return
@@ -102,7 +98,7 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
     )
   }
 
-  const statusCfg = ticketStatusConfig[ticket.status]
+  const { label: statusLabel, style: statusStyle } = findStatusDef(ticket.status, statuses)
 
   return (
     <div className="flex flex-col h-full">
@@ -131,14 +127,14 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <SLAStatusBadge status={ticket.slaStatus} />
-            <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', statusCfg.bg, statusCfg.color)}>
-              {statusCfg.label}
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={statusStyle}>
+              {statusLabel}
             </span>
             <span className="text-xs text-gray-400">{ticket.messages.length} message{ticket.messages.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {ticket.status !== 'resolved' && (
+          {!currentStatusDef?.isResolved && (
             <button
               onClick={handleResolve}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors"
@@ -385,13 +381,12 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
               <label className="text-xs text-gray-500 mb-1 block">Status</label>
               <select
                 value={ticket.status}
-                onChange={(e) => updateTicket(ticket.id, { status: e.target.value as TicketStatus })}
+                onChange={(e) => updateTicket(ticket.id, { status: e.target.value })}
                 className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 outline-none bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-50"
               >
-                <option value="open">Open</option>
-                <option value="pending">Pending / In Progress</option>
-                <option value="waiting_3rd_party">Waiting on 3rd Party</option>
-                <option value="resolved">Resolved</option>
+                {statuses.map((s) => (
+                  <option key={s.name} value={s.name}>{s.label}</option>
+                ))}
               </select>
             </div>
             <div className="mt-3">
@@ -413,8 +408,8 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
                 )}
               >
                 <option value="">— Select type —</option>
-                {TICKET_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {ticketTypes.map((t) => (
+                  <option key={t.name} value={t.name}>{t.label}</option>
                 ))}
               </select>
               {!ticket.ticketType && (

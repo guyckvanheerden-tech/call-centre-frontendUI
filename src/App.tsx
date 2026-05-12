@@ -16,6 +16,8 @@ const NotificationControlsPage = lazy(() => import('@/pages/NotificationControls
 const OnlineAgentsPage         = lazy(() => import('@/pages/OnlineAgentsPage'))
 const AdminSettingsPage        = lazy(() => import('@/pages/AdminSettingsPage'))
 const AgentHoursPage           = lazy(() => import('@/pages/AgentHoursPage'))
+const TicketStatusesPage       = lazy(() => import('@/pages/TicketStatusesPage'))
+const TicketTypesPage          = lazy(() => import('@/pages/TicketTypesPage'))
 
 function Loader() {
   return (
@@ -66,6 +68,8 @@ export default function App() {
           <Route path="/admin/online-agents"    element={<OnlineAgentsPage />} />
           <Route path="/admin/settings"         element={<AdminSettingsPage />} />
           <Route path="/admin/agent-hours"      element={<AgentHoursPage />} />
+          <Route path="/admin/ticket-statuses" element={<TicketStatusesPage />} />
+          <Route path="/admin/ticket-types"    element={<TicketTypesPage />} />
           <Route path="*"                       element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
