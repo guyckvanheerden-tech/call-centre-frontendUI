@@ -41,6 +41,7 @@ const navItems: NavItem[] = [
       { label: 'Ticket Settings',          to: '/admin/ticket-settings' },
       { label: 'Phone Settings',         to: '/admin/phone-settings' },
       { label: 'Webchat Settings',       to: '/admin/webchat-settings' },
+      { label: 'Channel Routing',        to: '/admin/channel-routing' },
       { label: 'System Settings',        to: '/admin/settings' },
     ],
   },

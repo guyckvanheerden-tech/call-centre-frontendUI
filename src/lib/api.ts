@@ -140,6 +140,7 @@ import type {
   NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
   TicketStatusDef, TicketTypeDef, TenantWithStats,
   Call, PhoneSettings, WidgetSettings, ChatSession, ChannelPreferences,
+  ChannelRoutingSettings,
 } from '@/types'
 
 interface CreateTenantInput {
@@ -191,6 +192,14 @@ export const webchatApi = {
 
   /** Close a chat session */
   closeSession: (id: string) => patch_<{ ok: boolean }>(`/webchat/sessions/${id}/close`, {}),
+}
+
+// ── Channel routing / priority ───────────────────────────────────────────────
+
+export const channelRoutingApi = {
+  getSettings:    () => get<ChannelRoutingSettings>('/channel-routing/settings'),
+  updateSettings: (body: Partial<ChannelRoutingSettings>) =>
+    patch_<ChannelRoutingSettings>('/channel-routing/settings', body),
 }
 
 // ── Channel preferences ──────────────────────────────────────────────────────

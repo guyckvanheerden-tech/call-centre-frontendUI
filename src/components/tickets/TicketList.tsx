@@ -1,12 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronUp, ChevronDown, Filter, Plus, X, Mail, MessageCircle } from 'lucide-react'
+import { ChevronUp, ChevronDown, Filter, Plus, X, Mail, MessageCircle, Phone } from 'lucide-react'
 import { useTickets, useCreateTicket, useUpdateTicket } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
 import { useDomains } from '@/hooks/useDomains'
 import { useTicketStatuses } from '@/hooks/useTicketStatuses'
+import { useQuery } from '@tanstack/react-query'
+import { channelRoutingApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import type { Ticket, TicketStatus, SLAStatus, User, TicketChannel, TicketStatusDef } from '@/types'
+import type { Ticket, TicketStatus, SLAStatus, User, TicketChannel, TicketStatusDef, ChannelKey } from '@/types'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
 import { cn, formatRelative, findStatusDef } from '@/lib/utils'
 
@@ -14,15 +16,27 @@ function ChannelBadge({ channel }: { channel: TicketChannel }) {
   if (channel === 'whatsapp') {
     return (
       <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-        <MessageCircle size={9} />
-        WhatsApp
+        <MessageCircle size={9} /> WhatsApp
+      </span>
+    )
+  }
+  if (channel === 'phone') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+        <Phone size={9} /> Phone
+      </span>
+    )
+  }
+  if (channel === 'webchat') {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded">
+        <MessageCircle size={9} /> Webchat
       </span>
     )
   }
   return (
     <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">
-      <Mail size={9} />
-      Email
+      <Mail size={9} /> Email
     </span>
   )
 }
@@ -38,7 +52,18 @@ export default function TicketList() {
   const { data: tickets = [],  isLoading: ticketsLoading } = useTickets()
   const { data: users   = [] }                              = useUsers()
   const { data: statuses = [] }                             = useTicketStatuses()
+  const { data: routing }                                   = useQuery({
+    queryKey: ['channel-routing'],
+    queryFn:  channelRoutingApi.getSettings,
+    staleTime: 60_000,
+  })
   const updateTicket   = useUpdateTicket()
+
+  // Build a priority map: channel → score (lower = higher priority)
+  const channelPriority = useMemo<Record<string, number>>(() => {
+    const order: ChannelKey[] = routing?.priority_order ?? ['phone', 'webchat', 'whatsapp', 'email']
+    return Object.fromEntries(order.map((ch, i) => [ch, i]))
+  }, [routing])
 
   // Names of statuses that mark a ticket as closed
   const resolvedNames = useMemo(
@@ -76,7 +101,18 @@ export default function TicketList() {
     if (filterDomain !== 'all')          t = t.filter((x) => x.domain   === filterDomain)
     t.sort((a, b) => {
       let val = 0
-      if (sortField === 'slaStatus')  val = statusOrder[a.slaStatus] - statusOrder[b.slaStatus]
+      if (sortField === 'slaStatus') {
+        // Primary: SLA urgency
+        val = statusOrder[a.slaStatus] - statusOrder[b.slaStatus]
+        // Secondary: channel priority (within same SLA band, high-priority channels surface first)
+        if (val === 0) {
+          const pa = channelPriority[a.channel] ?? 99
+          const pb = channelPriority[b.channel] ?? 99
+          val = pa - pb
+        }
+        // Tertiary: most recent
+        if (val === 0) val = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      }
       else if (sortField === 'updatedAt') val = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       else if (sortField === 'subject')   val = a.subject.localeCompare(b.subject)
       else if (sortField === 'id')        val = a.id.localeCompare(b.id)

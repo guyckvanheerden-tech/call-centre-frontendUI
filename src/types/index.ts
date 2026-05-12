@@ -259,6 +259,16 @@ export interface ChannelPreferences {
   whatsapp: boolean
 }
 
+// ── Channel routing / priority (per tenant) ────────────────────────────────
+
+export type ChannelKey = 'phone' | 'webchat' | 'whatsapp' | 'email'
+
+export interface ChannelRoutingSettings {
+  id?:             string
+  priority_order:  ChannelKey[]
+  fallback_to_all: boolean
+}
+
 // ── Reports ────────────────────────────────────────────────────────────────
 
 export interface DailyRow {
