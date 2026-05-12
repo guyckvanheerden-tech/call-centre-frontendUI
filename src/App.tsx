@@ -17,6 +17,7 @@ const OnlineAgentsPage         = lazy(() => import('@/pages/OnlineAgentsPage'))
 const AdminSettingsPage        = lazy(() => import('@/pages/AdminSettingsPage'))
 const AgentHoursPage           = lazy(() => import('@/pages/AgentHoursPage'))
 const TicketSettingsPage       = lazy(() => import('@/pages/TicketSettingsPage'))
+const PhoneSettingsPage        = lazy(() => import('@/pages/PhoneSettingsPage'))
 const TenantManagementPage     = lazy(() => import('@/pages/TenantManagementPage'))
 
 function Loader() {
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/admin/settings"         element={<AdminSettingsPage />} />
           <Route path="/admin/agent-hours"      element={<AgentHoursPage />} />
           <Route path="/admin/ticket-settings"    element={<TicketSettingsPage />} />
+          <Route path="/admin/phone-settings"     element={<PhoneSettingsPage />} />
           <Route path="/super-admin/tenants"      element={<TenantManagementPage />} />
           <Route path="*"                       element={<Navigate to="/" replace />} />
         </Route>

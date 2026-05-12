@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
       { label: 'Notification Controls',  to: '/admin/notifications' },
       { label: 'Agent Hours',             to: '/admin/agent-hours' },
       { label: 'Ticket Settings',          to: '/admin/ticket-settings' },
+      { label: 'Phone Settings',         to: '/admin/phone-settings' },
       { label: 'System Settings',        to: '/admin/settings' },
     ],
   },

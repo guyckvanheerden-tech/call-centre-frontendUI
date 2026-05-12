@@ -3,7 +3,7 @@ export type SLAStatus = 'on_track' | 'at_risk' | 'breached'
 export type UserRole = 'admin' | 'agent' | 'super_admin'
 export type MessageDirection = 'inbound' | 'outbound'
 export type AlertRecipient = 'agent' | 'admin'
-export type TicketChannel = 'email' | 'whatsapp'
+export type TicketChannel = 'email' | 'whatsapp' | 'phone'
 
 export interface Tenant {
   id:      string
@@ -20,7 +20,8 @@ export interface User {
   role:     UserRole
   avatar?:  string
   enabled:  boolean
-  online?:  boolean
+  online?:    boolean
+  extension?: string | null   // phone extension for click-to-call
   tenantId: string
   tenant?:  Tenant
   createdAt:      string
@@ -193,6 +194,39 @@ export interface TicketTypeDef {
   label:     string
   color:     string
   sortOrder: number
+}
+
+// ── Phone channel ──────────────────────────────────────────────────────────
+
+export type CallDirection = 'inbound' | 'outbound'
+export type CallStatus    = 'ringing' | 'in_progress' | 'completed' | 'missed' | 'failed'
+
+export interface Call {
+  id:              string
+  tenantId:        string
+  ticketId:        string | null
+  direction:       CallDirection
+  status:          CallStatus
+  callerNumber:    string | null
+  calleeNumber:    string | null
+  agentExtension:  string | null
+  agentId:         string | null
+  durationSeconds: number | null
+  recordingUrl:    string | null
+  pbxCallId:       string | null
+  startedAt:       string
+  answeredAt:      string | null
+  endedAt:         string | null
+  users?:          { name: string } | null   // joined agent name
+}
+
+export interface PhoneSettings {
+  id:             string
+  enabled:        boolean
+  pbxLabel:       string
+  dialUrl:        string | null
+  dialAuthHeader: string | null   // masked as '••••••••' when set
+  webhookSecret:  string | null   // masked as '••••••••' when set
 }
 
 // ── Reports ────────────────────────────────────────────────────────────────

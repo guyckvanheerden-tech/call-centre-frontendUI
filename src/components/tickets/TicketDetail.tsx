@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, User, Clock, Tag, MoreHorizontal, CheckCircle2,
   Send, ChevronDown, Paperclip, Bold, Italic, Link2,
-  CornerUpLeft, TicketIcon, Sparkles, Loader2, MessageCircle, Mail,
+  CornerUpLeft, TicketIcon, Sparkles, Loader2, MessageCircle, Mail, Phone,
 } from 'lucide-react'
 import { useUpdateTicket, useAddMessage } from '@/hooks/useTickets'
 import { useUsers } from '@/hooks/useUsers'
@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth'
 import { aiApi } from '@/lib/api'
 import type { Ticket, TicketMessage } from '@/types'
 import SLAStatusBadge from '@/components/sla/SLAStatusBadge'
+import CallLogPanel from '@/components/tickets/CallLogPanel'
 import SLACountdown from '@/components/sla/SLACountdown'
 import { cn, formatDateTime, formatRelative, findStatusDef } from '@/lib/utils'
 
@@ -118,6 +119,10 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
             {ticket.channel === 'whatsapp' ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                 <MessageCircle size={9} /> WhatsApp
+              </span>
+            ) : ticket.channel === 'phone' ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                <Phone size={9} /> Phone
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">
@@ -375,6 +380,9 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
             {ticket.channel === 'whatsapp' && ticket.customerPhone && (
               <MetaRow icon={<MessageCircle size={12} />} label="WhatsApp" value={ticket.customerPhone} />
             )}
+            {ticket.customerPhone && ticket.channel !== 'whatsapp' && (
+              <MetaRow icon={<Phone size={12} />} label="Phone" value={ticket.customerPhone} />
+            )}
             <MetaRow icon={<Tag size={12} />} label="Domain" value={ticket.domain} />
             <MetaRow icon={<Clock size={12} />} label="Opened" value={formatRelative(ticket.createdAt)} />
             <div className="mt-3">
@@ -451,6 +459,14 @@ export default function TicketDetail({ ticket }: { ticket: Ticket }) {
               </div>
             </Section>
           )}
+
+          {/* Phone call log — only renders when phone channel is active or calls exist */}
+          <Section title="">
+            <CallLogPanel
+              ticketId={ticket.id}
+              customerPhone={ticket.customerPhone ?? null}
+            />
+          </Section>
         </div>
       </div>
     </div>

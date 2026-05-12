@@ -139,6 +139,7 @@ import type {
   Ticket, TicketMessage, User, Domain, SLAPolicy,
   NotificationSettings, KPIData, DailyRow, SettingsCategory, AgentHoursReport,
   TicketStatusDef, TicketTypeDef, TenantWithStats,
+  Call, PhoneSettings,
 } from '@/types'
 
 interface CreateTenantInput {
@@ -154,3 +155,27 @@ interface SLAPolicyInput    {
   name: string; firstResponseMinutes: number;
   resolutionMinutes: number; businessHoursOnly: boolean
 }
+
+// ── Phone channel ──────────────────────────────────────────────────────────
+
+export const phoneApi = {
+  /** List calls — optionally scoped to a ticket */
+  listCalls: (ticketId?: string) => {
+    const qs = ticketId ? `?ticketId=${ticketId}` : ''
+    return get<Call[]>(`/phone/calls${qs}`)
+  },
+
+  /** Initiate an outbound call (click-to-call) */
+  dial: (payload: { ticketId: string; customerPhone: string; agentExtension?: string }) =>
+    post<{ callId: string }>('/phone/dial', payload),
+
+  /** Get phone/PBX settings for the tenant */
+  getSettings: () => get<PhoneSettings>('/phone/settings'),
+
+  /** Update phone/PBX settings */
+  updateSettings: (patch: Partial<PhoneSettings> & { webhookSecret?: string; dialAuthHeader?: string }) =>
+    patch_<PhoneSettings>('/phone/settings', patch),
+}
+
+// helper alias — 'patch' is already declared as a const above
+function patch_<T>(path: string, body: unknown) { return patch<T>(path, body) }
